@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kuis Multibangun Engineering Hub</title>
+    <title>Kuis Interaktif Mekanika Tanah - Braja M. DAS - dibuat oleh Ir. ISPARMO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -50,7 +50,7 @@
             overflow-y: auto;
             border: 1px solid #e5e7eb;
         }
-        /* Print Styles */
+        /* Robust Print Styles */
         @media print {
             body * {
                 visibility: hidden;
@@ -79,6 +79,7 @@
             <div class="text-center mb-6">
                 <h1 class="text-3xl font-bold text-gray-800">Seberapa Engineer-nya Anda?</h1>
                 <p class="text-gray-500 mt-2">Kuis oleh MULTIBANGUN ENGINEERING HUB</p>
+                <h2 class="text-base font-semibold text-gray-600 mt-4">Dibuat Berdasarkan Buku<br>PRINCIPLES OF GEOTECHNICAL ENGINEERING - Braja M. DAS</h2>
             </div>
 
             <form id="user-form" class="space-y-4">
@@ -197,4 +198,405 @@
     <!-- Loading Modal -->
     <div id="loading-modal" class="modal-overlay fixed inset-0 flex items-center justify-center hidden no-print">
         <div class="bg-white p-8 rounded-lg shadow-xl text-center">
-            <svg class="animate-spin h-12 w-12 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h
+            <svg class="animate-spin h-12 w-12 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p class="mt-4 text-lg font-semibold text-gray-700">Gemini sedang menyiapkan soal kuis...</p>
+            <p class="text-gray-500">Ini mungkin perlu beberapa saat.</p>
+        </div>
+    </div>
+    
+    <!-- Ask Expert Modal -->
+    <div id="ask-expert-modal" class="modal-overlay fixed inset-0 flex items-center justify-center hidden no-print p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-lg mx-4 flex flex-col">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Tanya Ahli Geoteknik</h2>
+            <p class="text-gray-600 mb-4">Punya pertanyaan tentang soal atau konsep geoteknik? Tanyakan di sini.</p>
+            <textarea id="expert-question" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" rows="4" placeholder="Ketik pertanyaan Anda..."></textarea>
+            <div id="expert-answer-container" class="mt-4 p-4 bg-gray-50 rounded-lg min-h-[100px] hidden prose max-w-none">
+                <div id="expert-answer-text" class="text-gray-700"></div>
+            </div>
+            <div class="flex justify-end space-x-4 mt-6">
+                <button id="close-expert-modal-btn" class="btn bg-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-400">Tutup</button>
+                <button id="submit-expert-question-btn" class="btn bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 flex items-center">
+                    <span id="submit-expert-text">Kirim</span>
+                    <svg id="submit-expert-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // DOM Elements
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const loadingModal = document.getElementById('loading-modal');
+        const userForm = document.getElementById('user-form');
+        const formError = document.getElementById('form-error');
+        const questionNumber = document.getElementById('question-number');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedback = document.getElementById('feedback');
+        const explanation = document.getElementById('explanation');
+        const explanationText = document.getElementById('explanation-text');
+        const nextBtn = document.getElementById('next-btn');
+        const scoreDisplay = document.getElementById('score');
+        const userNameResult = document.getElementById('user-name-result');
+        const finalScore = document.getElementById('final-score');
+        const engineerLevel = document.getElementById('engineer-level');
+        const engineerLevelDesc = document.getElementById('engineer-level-desc');
+        const answersReview = document.getElementById('answers-review');
+        const restartBtn = document.getElementById('restart-btn');
+        const downloadCsvBtn = document.getElementById('download-csv-btn');
+        
+        // Expert Modal Elements
+        const askExpertBtn = document.getElementById('ask-expert-btn');
+        const askExpertModal = document.getElementById('ask-expert-modal');
+        const closeExpertModalBtn = document.getElementById('close-expert-modal-btn');
+        const submitExpertQuestionBtn = document.getElementById('submit-expert-question-btn');
+        const expertQuestion = document.getElementById('expert-question');
+        const expertAnswerContainer = document.getElementById('expert-answer-container');
+        const expertAnswerText = document.getElementById('expert-answer-text');
+        const submitExpertText = document.getElementById('submit-expert-text');
+        const submitExpertSpinner = document.getElementById('submit-expert-spinner');
+        
+        const selectAllCheckbox = document.getElementById('select-all-topics');
+        const topicCheckboxes = document.querySelectorAll('input[name="topics"]');
+
+        // State
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let userData = {};
+        let totalQuestions = 10;
+        let apiKey = '';
+
+        // Event Listeners
+        userForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            startQuiz();
+        });
+
+        nextBtn.addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                displayQuestion();
+            } else {
+                showResults();
+            }
+        });
+
+        restartBtn.addEventListener('click', () => {
+            askExpertBtn.classList.add('hidden');
+            resultsScreen.classList.add('hidden');
+            welcomeScreen.classList.remove('hidden');
+        });
+        
+        downloadCsvBtn.addEventListener('click', downloadResultsCSV);
+
+        askExpertBtn.addEventListener('click', () => {
+            askExpertModal.classList.remove('hidden');
+        });
+
+        closeExpertModalBtn.addEventListener('click', () => {
+            askExpertModal.classList.add('hidden');
+        });
+
+        submitExpertQuestionBtn.addEventListener('click', handleAskExpertSubmit);
+
+        selectAllCheckbox.addEventListener('change', (e) => {
+            topicCheckboxes.forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+        });
+
+        // Functions
+        async function startQuiz() {
+            apiKey = document.getElementById('api-key').value;
+            userData = {
+                name: document.getElementById('name').value,
+                company: document.getElementById('company').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+            };
+
+            if (!userData.name || !userData.company || !userData.email || !userData.phone || !apiKey) {
+                formError.textContent = 'Semua kolom harus diisi, termasuk Kunci API.';
+                formError.classList.remove('hidden');
+                return;
+            }
+            
+            const selectedTopics = Array.from(document.querySelectorAll('input[name="topics"]:checked')).map(cb => cb.value);
+            if (selectedTopics.length === 0) {
+                formError.textContent = 'Silakan pilih minimal satu topik soal.';
+                formError.classList.remove('hidden');
+                return;
+            }
+
+            formError.classList.add('hidden');
+
+            const selectedNum = document.querySelector('input[name="num-questions"]:checked').value;
+            totalQuestions = (selectedNum === 'custom') ? (parseInt(document.getElementById('custom-questions').value) || 10) : parseInt(selectedNum);
+
+            welcomeScreen.classList.add('hidden');
+            loadingModal.classList.remove('hidden');
+
+            try {
+                const generatedQuestions = await generateQuizQuestions(totalQuestions, apiKey, selectedTopics);
+                questions = generatedQuestions;
+                if (questions && questions.length > 0) {
+                    loadingModal.classList.add('hidden');
+                    quizScreen.classList.remove('hidden');
+                    score = 0;
+                    currentQuestionIndex = 0;
+                    displayQuestion();
+                } else {
+                    throw new Error("Gagal membuat soal kuis. Periksa kembali Kunci API Anda atau coba topik lain.");
+                }
+            } catch (error) {
+                loadingModal.classList.add('hidden');
+                welcomeScreen.classList.remove('hidden');
+                formError.textContent = error.message || "Terjadi kesalahan. Silakan coba lagi.";
+                formError.classList.remove('hidden');
+            }
+        }
+
+        function displayQuestion() {
+            feedback.classList.add('hidden');
+            explanation.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+
+            const currentQuestion = questions[currentQuestionIndex];
+            questionNumber.textContent = `${currentQuestionIndex + 1} dari ${questions.length}`;
+            questionText.innerHTML = currentQuestion.question;
+            optionsContainer.innerHTML = '';
+
+            currentQuestion.options.forEach((option, index) => {
+                const optionPrefix = String.fromCharCode(97 + index);
+                const button = document.createElement('button');
+                button.innerHTML = `<span class="font-bold mr-2">${optionPrefix}.</span> ${option}`;
+                button.classList.add('option-btn', 'btn', 'w-full', 'p-4', 'text-left', 'bg-gray-100', 'hover:bg-gray-200', 'rounded-lg', 'flex', 'items-start');
+                button.onclick = () => handleAnswer(option, button);
+                optionsContainer.appendChild(button);
+            });
+            scoreDisplay.textContent = score;
+        }
+
+        function handleAnswer(selectedOption, selectedButton) {
+            const currentQuestion = questions[currentQuestionIndex];
+            questions[currentQuestionIndex].userAnswer = selectedOption;
+
+            const isCorrect = selectedOption.trim() === currentQuestion.correctAnswer.trim();
+
+            optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = true;
+                const btnOptionText = btn.textContent.substring(3).trim();
+                if (btnOptionText === currentQuestion.correctAnswer.trim()) {
+                    btn.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                score++;
+                scoreDisplay.textContent = score;
+                selectedButton.classList.add('correct');
+                feedback.textContent = 'BENAR!';
+                feedback.className = 'mt-6 p-4 rounded-lg text-center font-bold bg-green-100 text-green-800';
+                explanation.classList.add('hidden');
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedback.textContent = 'SALAH!';
+                feedback.className = 'mt-6 p-4 rounded-lg text-center font-bold bg-red-100 text-red-800';
+                explanationText.innerHTML = currentQuestion.explanation;
+                explanation.classList.remove('hidden');
+            }
+
+            feedback.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+        }
+
+        function showResults() {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            askExpertBtn.classList.remove('hidden');
+
+            userNameResult.textContent = `Hasil untuk, ${userData.name}`;
+            const percentage = Math.round((score / questions.length) * 100);
+            finalScore.textContent = percentage;
+
+            let level = '';
+            let levelDesc = '';
+            if (percentage <= 50) {
+                level = 'Engineer Pemula';
+                levelDesc = 'Hayo belajar lagi!';
+            } else if (percentage > 50 && percentage <= 70) {
+                level = 'Engineer Biasa';
+                levelDesc = 'Kemampuan Anda cukup baik!';
+            } else {
+                level = 'Engineer Ahli';
+                levelDesc = 'Luar biasa! Anda menguasai bidang ini.';
+            }
+            engineerLevel.textContent = level;
+            engineerLevelDesc.textContent = levelDesc;
+
+            answersReview.innerHTML = '<h3 class="text-2xl font-bold text-gray-800 mb-4 no-print">Tinjauan Jawaban</h3>';
+            questions.forEach((q, index) => {
+                const userAnswer = q.userAnswer || "Tidak dijawab";
+                const isCorrect = userAnswer.trim() === q.correctAnswer.trim();
+                
+                let answerDetailsHTML = '';
+                if (isCorrect) {
+                    answerDetailsHTML = `<p class="mt-2 text-sm">Jawaban Anda: <span class="font-bold text-green-700">${userAnswer} (Benar)</span></p>`;
+                } else {
+                    answerDetailsHTML = `
+                        <p class="mt-2 text-sm">Jawaban Anda: <span class="font-bold text-red-700">${userAnswer}</span></p>
+                        <p class="text-sm">Jawaban Benar: <span class="font-bold text-green-700">${q.correctAnswer}</span></p>
+                        <div class="mt-2 text-sm text-gray-600 bg-gray-100 p-2 rounded prose max-w-none"><strong>Penjelasan:</strong> ${q.explanation}</div>
+                    `;
+                }
+
+                const reviewItem = `
+                    <div class="p-4 rounded-lg ${isCorrect ? 'bg-green-50' : 'bg-red-50'} border ${isCorrect ? 'border-green-200' : 'border-red-200'}">
+                        <p class="font-semibold text-gray-800">${index + 1}. ${q.question}</p>
+                        ${answerDetailsHTML}
+                    </div>
+                `;
+                answersReview.innerHTML += reviewItem;
+            });
+        }
+
+        function downloadResultsCSV() {
+            const name = userData.name || '';
+            const company = userData.company || '';
+            const email = userData.email || '';
+            const phone = userData.phone || '';
+            const finalScoreValue = finalScore.textContent || '0';
+            const engineerLevelValue = engineerLevel.textContent || '';
+
+            const headers = ['Nama', 'Instansi/Perusahaan', 'Email', 'No. Telp/WA', 'Skor (Nilai)', 'Level Engineer'];
+            const data = [
+                `"${name.replace(/"/g, '""')}"`,
+                `"${company.replace(/"/g, '""')}"`,
+                `"${email.replace(/"/g, '""')}"`,
+                `"${phone.replace(/"/g, '""')}"`,
+                finalScoreValue,
+                `"${engineerLevelValue.replace(/"/g, '""')}"`
+            ];
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += headers.join(',') + '\r\n';
+            csvContent += data.join(',') + '\r\n';
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            const safeName = name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            link.setAttribute("download", `Hasil-Kuis-Geoteknik-${safeName}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        async function handleAskExpertSubmit() {
+            const userQuestion = expertQuestion.value;
+            if (!userQuestion.trim()) {
+                alert("Silakan ketik pertanyaan Anda.");
+                return;
+            }
+            
+            expertAnswerContainer.classList.remove('hidden');
+            expertAnswerText.innerHTML = '';
+            submitExpertText.classList.add('hidden');
+            submitExpertSpinner.classList.remove('hidden');
+            submitExpertQuestionBtn.disabled = true;
+
+            try {
+                const answer = await getExpertAnswer(userQuestion, apiKey);
+                expertAnswerText.innerHTML = marked.parse(answer);
+            } catch (error) {
+                expertAnswerText.innerHTML = `<p class="text-red-500">Maaf, terjadi kesalahan: ${error.message}</p>`;
+            } finally {
+                submitExpertText.classList.remove('hidden');
+                submitExpertSpinner.classList.add('hidden');
+                submitExpertQuestionBtn.disabled = false;
+            }
+        }
+
+        async function getExpertAnswer(question, key) {
+             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+             const prompt = `Anda adalah seorang ahli geoteknik yang ramah dan informatif. Jawab pertanyaan berikut dengan jelas dan ringkas berdasarkan pengetahuan Anda tentang mekanika tanah dan rekayasa geoteknik. Gunakan format Markdown (seperti **tebal** atau daftar) untuk memperjelas jawaban. Pertanyaan: "${question}"`;
+             
+             const payload = {
+                contents: [{ parts: [{ text: prompt }] }]
+             };
+
+             const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+             });
+
+             if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error.message);
+             }
+
+             const result = await response.json();
+             if (result.candidates && result.candidates[0].content.parts[0].text) {
+                return result.candidates[0].content.parts[0].text;
+             } else {
+                return "Maaf, saya tidak bisa memberikan jawaban saat ini.";
+             }
+        }
+
+        async function generateQuizQuestions(numQuestions, key, topics) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+            const context = `
+                Berdasarkan buku "Principles of Geotechnical Engineering" dan "Advanced Soil Mechanics" oleh Braja M. Das, berikut adalah rangkuman topik-topik utama:
+                - **Asal Usul Tanah dan Ukuran Butiran:** Siklus batuan, pelapukan, ukuran partikel tanah (kerikil, pasir, lanau, lempung), mineral lempung (kaolinit, ilit, montmorilonit), kurva distribusi ukuran butiran, koefisien keseragaman, koefisien gradasi.
+                - **Hubungan Berat-Volume:** Angka pori (e), porositas (n), derajat kejenuhan (S), kadar air (w), berat volume (gamma, gamma_d, gamma_sat), dan hubungan-hubungannya.
+                - **Plastisitas dan Struktur Tanah:** Batas-batas Atterberg (Batas Cair/LL, Batas Plastis/PL, Batas Susut/SL), Indeks Plastisitas (PI), Indeks Likuiditas (LI), Aktivitas, struktur tanah (kohesif dan non-kohesif).
+                - **Klasifikasi Tanah:** Sistem Klasifikasi AASHTO, Sistem Klasifikasi Tanah Terpadu (USCS), simbol grup (GW, SP, CL, MH, dll.).
+                - **Pemadatan Tanah:** Uji Proctor (Standar, Modifikasi), kurva pemadatan, kadar air optimum (OMC), berat volume kering maksimum (MDD), kurva zero-air-void.
+                - **Permeabilitas:** Hukum Darcy (Q = kiA), konduktivitas hidrolik (k), uji tinggi tekan konstan, uji tinggi tekan jatuh, konduktivitas hidrolik ekuivalen pada tanah berlapis.
+                - **Rembesan:** Persamaan kontinuitas Laplace, jaring aliran (flow net), garis aliran, garis ekipotensial, perhitungan rembesan dari jaring aliran, tekanan angkat (uplift).
+                - **Tegangan In-Situ:** Konsep tegangan efektif, tegangan pada tanah jenuh dengan dan tanpa rembesan (ke atas/ke bawah), kondisi quicksand, heaving.
+                - **Tegangan dalam Massa Tanah:** Tegangan akibat beban titik, beban garis, beban lajur, area melingkar, dan area persegi panjang (prinsip solusi Boussinesq).
+                - **Kompresibilitas Tanah:** Penurunan elastis, penurunan konsolidasi (primer dan sekunder), lempung terkonsolidasi normal (NC) vs terkonsolidasi berlebih (OC), tekanan prakonsolidasi, Indeks Kompresi (Cc), Indeks Swell (Cs), koefisien konsolidasi (cv).
+                - **Kuat Geser Tanah:** Kriteria keruntuhan Mohr-Coulomb, kohesi (c'), sudut geser dalam (phi'), uji laboratorium (Geser Langsung, Triaksial), kondisi terdrainase vs tak terdrainase, konsep f=0 untuk lempung.
+                - **Tekanan Tanah Lateral: At-Rest, Rankine, & Coulomb:** Tekanan kondisi diam (Ko), aktif (Ka), dan pasif (Kp). Teori Rankine dan Coulomb.
+                - **Tekanan Tanah Lateral: Permukaan Runtuh Lengkung:** Tekanan pasif dengan gesekan dinding, permukaan keruntuhan spiral logaritmik, galian berpenopang (braced cuts).
+                - **Stabilitas Lereng:** Faktor keamanan, stabilitas lereng tak terhingga dan terhingga. Metode irisan (Ordinary, Bishop) untuk permukaan keruntuhan sirkular.
+                - **Daya Dukung Tanah untuk Pondasi Dangkal:** Daya dukung ultimit, keruntuhan geser umum vs. lokal, persamaan daya dukung Terzaghi, faktor daya dukung (Nc, Nq, Nγ), pengaruh muka air tanah.
+                - **Eksplorasi Bawah Permukaan:** Metode bor (augers, wash boring), pengambilan sampel (split-spoon, Shelby tube), uji in-situ (SPT, CPT), Standard Penetration Number (N60).
+            `;
+            const prompt = `
+                Buatkan kuis BARU yang dinamis dengan ${numQuestions} soal pilihan ganda tentang ilmu geoteknik. Pastikan soal-soal ini bervariasi dan berbeda dari kuis sebelumnya yang mungkin pernah dibuat.
+                FOKUS HANYA PADA TOPIK-TOPIK BERIKUT YANG DIPILIH PENGGUNA: ${topics.join(', ')}.
+                Pastikan soal-soal yang dibuat benar-benar berasal dari topik-topik yang dipilih tersebut dan bervariasi tingkat kesulitannya dari mudah hingga mahir.
+                Gunakan KONTEKS DETAIL yang diberikan sebagai dasar pengetahuan Anda.
+                Untuk setiap soal, berikan:
+                1. 'question': Teks pertanyaan yang jelas.
+                2. 'options': Array berisi 4 string pilihan jawaban yang unik dan masuk akal.
+                3. 'correctAnswer': String jawaban yang benar dari 4 pilihan tersebut.
+                4. 'explanation': Penjelasan singkat dan jelas mengapa jawaban tersebut benar, ditulis dari sudut pandang "Ahli Geoteknik".
+                PENTING: Jika ada rumus atau simbol matematika dalam pertanyaan atau penjelasan, formatlah menggunakan tag HTML sederhana. Contoh: untuk menampilkan γ_d, gunakan '&gamma;<sub>d</sub>'. Untuk σ', gunakan '&sigma;&prime;'. Untuk D_10, gunakan 'D<sub>10</sub>'.
+                Pastikan format output adalah JSON yang valid tanpa markdown atau karakter \\\`\\\`\\\`.
+            `;
+            const schema = { type: "ARRAY", items: { type: "OBJECT", properties: { "question": { "type": "STRING" }, "options": { "type": "ARRAY", "items": { "type": "STRING" } }, "correctAnswer": { "type": "STRING" }, "explanation": { "type": "STRING" } }, required: ["question", "options", "correctAnswer", "explanation"] } };
+            const payload = { contents: [{ parts: [{ text: context + "\n\n" + prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: schema } };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Kesalahan API: ${errorData.error.message}.`);
+            }
+            const result = await response.json();
+            if (result.candidates && result.candidates[0].content.parts[0].text) {
+                try { return JSON.parse(result.candidates[0].content.parts[0].text); } catch (e) { throw new Error("Gagal memproses respons dari API."); }
+            } else { throw new Error("Respons dari API tidak valid atau kosong."); }
+        }
+    </script>
+</body>
+</html>
