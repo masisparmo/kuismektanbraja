@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Multibangun Engineering Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .quiz-container {
+            transition: all 0.5s ease-in-out;
+        }
+        .btn {
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .option-btn {
+            border: 2px solid transparent;
+        }
+        .option-btn.selected {
+            border-color: #3b82f6; /* blue-500 */
+            background-color: #dbeafe; /* blue-100 */
+        }
+        .option-btn.correct {
+            background-color: #dcfce7; /* green-100 */
+            border-color: #22c55e; /* green-500 */
+        }
+        .option-btn.incorrect {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+        }
+        .option-btn:disabled {
+            cursor: not-allowed;
+        }
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+        }
+        #expert-answer-container {
+            max-height: 40vh;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+        }
+        /* Print Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #results-screen, #results-screen * {
+                visibility: visible;
+            }
+            #results-screen {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            #results-screen .no-print {
+                visibility: hidden;
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="w-full max-w-2xl mx-auto">
+
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="quiz-container bg-white p-8 rounded-2xl shadow-lg no-print">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-800">Seberapa Engineer-nya Anda?</h1>
+                <p class="text-gray-500 mt-2">Kuis oleh MULTIBANGUN ENGINEERING HUB</p>
+            </div>
+
+            <form id="user-form" class="space-y-4">
+                <!-- User Data Inputs -->
+                <input type="text" id="name" placeholder="Nama Lengkap" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                <input type="text" id="company" placeholder="Instansi/Perusahaan" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                <input type="email" id="email" placeholder="Email" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                <input type="tel" id="phone" placeholder="No. Telp/WA" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                
+                <!-- API Key Input -->
+                <div class="space-y-2">
+                    <input type="password" id="api-key" placeholder="Kunci API Gemini Anda" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                    <details class="text-sm text-gray-500">
+                        <summary class="cursor-pointer">Bagaimana cara mendapatkan Kunci API Gemini?</summary>
+                        <div class="p-2 bg-gray-50 rounded-md mt-1">
+                            <ol class="list-decimal list-inside space-y-1">
+                                <li>Buka Google AI Studio di <a href="https://aistudio.google.com/" target="_blank" class="text-blue-600 hover:underline">aistudio.google.com</a>.</li>
+                                <li>Masuk dengan akun Google Anda.</li>
+                                <li>Klik tombol "Get API key" (Dapatkan Kunci API).</li>
+                                <li>Klik "Create API key in new project" (Buat Kunci API di proyek baru).</li>
+                                <li>Salin (copy) kunci API yang muncul dan tempel (paste) di kolom di atas.</li>
+                            </ol>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Number of Questions Selection -->
+                <div class="pt-4">
+                    <p class="font-semibold mb-2 text-gray-700">Pilih Jumlah Soal:</p>
+                    <div class="flex flex-wrap gap-4 items-center">
+                        <label class="flex items-center"><input type="radio" name="num-questions" value="5" class="mr-2"> 5 Soal</label>
+                        <label class="flex items-center"><input type="radio" name="num-questions" value="10" class="mr-2" checked> 10 Soal</label>
+                        <label class="flex items-center"><input type="radio" name="num-questions" value="15" class="mr-2"> 15 Soal</label>
+                        <label class="flex items-center">
+                            <input type="radio" name="num-questions" value="custom" class="mr-2">
+                            <input type="number" id="custom-questions" placeholder="Jumlah lain" class="w-24 p-2 border rounded-lg text-sm">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Topic Selection -->
+                <div class="pt-4">
+                    <p class="font-semibold mb-2 text-gray-700">Pilih Topik Soal (minimal 1):</p>
+                    <div id="topics-container" class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                        <label class="flex items-center font-bold"><input type="checkbox" id="select-all-topics" class="mr-2"> Pilih Semua Topik</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Asal Usul Tanah dan Ukuran Butiran" class="mr-2"> Bab 2: Asal Usul Tanah & Ukuran Butiran</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Hubungan Berat-Volume" class="mr-2"> Bab 3: Hubungan Berat-Volume</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Plastisitas dan Struktur Tanah" class="mr-2"> Bab 4: Plastisitas & Struktur Tanah</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Klasifikasi Tanah" class="mr-2"> Bab 5: Klasifikasi Tanah</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Pemadatan Tanah" class="mr-2"> Bab 6: Pemadatan Tanah</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Permeabilitas" class="mr-2"> Bab 7: Permeabilitas</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Rembesan" class="mr-2"> Bab 8: Rembesan</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Tegangan In-Situ" class="mr-2"> Bab 9: Tegangan In-Situ</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Tegangan dalam Massa Tanah" class="mr-2"> Bab 10: Tegangan dalam Massa Tanah</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Kompresibilitas Tanah" class="mr-2"> Bab 11: Kompresibilitas Tanah</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Kuat Geser Tanah" class="mr-2"> Bab 12: Kuat Geser Tanah</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Tekanan Tanah Lateral: At-Rest, Rankine, & Coulomb" class="mr-2"> Bab 13: Tekanan Tanah Lateral (Rankine)</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Tekanan Tanah Lateral: Permukaan Runtuh Lengkung" class="mr-2"> Bab 14: Tekanan Tanah Lateral (Lengkung)</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Stabilitas Lereng" class="mr-2"> Bab 15: Stabilitas Lereng</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Daya Dukung Tanah untuk Pondasi Dangkal" class="mr-2"> Bab 16: Daya Dukung Pondasi Dangkal</label>
+                        <label class="flex items-center"><input type="checkbox" name="topics" value="Eksplorasi Bawah Permukaan" class="mr-2"> Bab 17: Eksplorasi Bawah Permukaan</label>
+                    </div>
+                </div>
+
+                <button type="submit" id="start-quiz-btn" class="btn w-full bg-blue-600 text-white p-4 rounded-lg font-bold text-lg hover:bg-blue-700 shadow-md">Mulai Kuis</button>
+                <p id="form-error" class="text-red-500 text-sm text-center hidden"></p>
+            </form>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="quiz-container bg-white p-8 rounded-2xl shadow-lg hidden no-print">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Soal <span id="question-number"></span></h2>
+                <div class="text-lg font-semibold text-gray-600">Skor: <span id="score">0</span></div>
+            </div>
+            <p id="question-text" class="text-lg text-gray-700 mb-6 min-h-[6rem]"></p>
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <div id="feedback" class="mt-6 p-4 rounded-lg text-center font-semibold hidden"></div>
+            <div id="explanation" class="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-gray-700 rounded-lg hidden">
+                <h4 class="font-bold text-blue-800">Penjelasan dari Ahli Geoteknik:</h4>
+                <p id="explanation-text" class="mt-2"></p>
+            </div>
+            <button id="next-btn" class="btn w-full bg-blue-600 text-white p-3 rounded-lg font-bold mt-8 hover:bg-blue-700 shadow-md hidden">Lanjut</button>
+        </div>
+
+        <!-- Results Screen (Printable Area) -->
+        <div id="results-screen" class="quiz-container bg-white p-8 rounded-2xl shadow-lg hidden">
+            <h2 class="text-3xl font-bold text-center text-gray-800">Hasil Kuis</h2>
+            <p id="user-name-result" class="text-center text-gray-600 mt-2"></p>
+            <div class="text-center bg-blue-50 py-8 px-4 mt-6 rounded-xl">
+                <p class="text-lg text-gray-700">Skor Akhir Anda</p>
+                <p id="final-score" class="text-6xl font-bold text-blue-600 my-2"></p>
+                <p id="engineer-level" class="text-xl font-semibold text-gray-800"></p>
+                <p id="engineer-level-desc" class="text-gray-500"></p>
+            </div>
+            <div id="answers-review" class="mt-8 space-y-4"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 no-print">
+                 <button id="download-csv-btn" class="btn w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 shadow-md flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                    Unduh (CSV)
+                 </button>
+                 <button id="restart-btn" class="btn w-full bg-gray-600 text-white p-3 rounded-lg font-bold hover:bg-gray-700 shadow-md flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 110 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.414 0L6 12.414V9a1 1 0 112 0v3.414l1.586-1.586a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                    Coba Lagi
+                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating "Ask Expert" Button -->
+    <button id="ask-expert-btn" class="no-print hidden fixed bottom-6 right-6 bg-purple-600 text-white p-4 rounded-full shadow-lg hover:bg-purple-700 flex items-center transition transform hover:scale-110">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+        <span class="ml-2 font-semibold">Tanya Ahli</span>
+    </button>
+
+    <!-- Loading Modal -->
+    <div id="loading-modal" class="modal-overlay fixed inset-0 flex items-center justify-center hidden no-print">
+        <div class="bg-white p-8 rounded-lg shadow-xl text-center">
+            <svg class="animate-spin h-12 w-12 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h
