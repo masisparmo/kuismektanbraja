@@ -6,6 +6,8 @@
 
 Selamat datang di Web Aplikasi Kuis Interaktif Mekanika Tanah. Aplikasi ini dirancang sebagai alat bantu belajar dan evaluasi yang dinamis bagi para mahasiswa, praktisi, dan siapa saja yang tertarik dengan bidang rekayasa geoteknik.
 
+Akses aplikasi di [https://kuismektanbraja.isparmo.com/](https://kuismektanbraja.isparmo.com/)
+
 Tujuan utama dari aplikasi ini adalah untuk menyediakan platform kuis yang tidak statis. Berbeda dengan kuis konvensional, aplikasi ini menggunakan kekuatan **Google Gemini API** untuk menghasilkan soal-soal yang selalu baru dan relevan setiap kali sesi kuis dimulai. Materi soal dibuat berdasarkan referensi dari buku **"Principles of Geotechnical Engineering" karya Braja M. Das**, mencakup 17 bab utama dalam ilmu mekanika tanah.
 
 **2\. Fitur Utama**
